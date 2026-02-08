@@ -139,7 +139,7 @@ def update_map(start_lat_s: str, start_lon_s: str, dest_lat_s: str, dest_lon_s: 
 
     start_marker = None
     dest_marker = None
-    line = []
+    line = None
     bounds = None
 
     if start_ok:
@@ -158,30 +158,22 @@ def update_map(start_lat_s: str, start_lon_s: str, dest_lat_s: str, dest_lon_s: 
         )
 
     if start_ok and dest_ok:
-        # Draw line
-
         # Geodesic distance + azimuth
         fwd_az_deg, back_az_deg, dist_m = geod.inv(s_lon, s_lat, d_lon, d_lat)
         az = (fwd_az_deg + 360) % 360
         dist_km = dist_m / 1000
-
         # --- Generate great-circle points ---
         N = 1024  # number of segments (increase for smoother curve)
         gc_lonlat = geod.npts(s_lon, s_lat, d_lon, d_lat, N, False, 0, 0)
         shift_right: bool = d_lon > 180
         gc_points = [(lat, (lon + 360) % 360 if shift_right else lon) for lon, lat in gc_lonlat]
-
         # --- Curved polyline ---
-        line = [
-            dl.Polyline(
-                positions=gc_points,
-                color="blue",
-                weight=3,
-            )
-        ]
-
+        line = dl.Polyline(
+            positions=gc_points,
+            color="blue",
+            weight=3,
+        )
         result = f"Distance: {dist_km:.3f} km\nAzimuth (Start → Dest): {az:.1f}° (clockwise from true North)"
-
         # Fit map to both points
         bounds = [[min(s_lat, d_lat), min(s_lon, d_lon)], [max(s_lat, d_lat), max(s_lon, d_lon)]]
     else:
