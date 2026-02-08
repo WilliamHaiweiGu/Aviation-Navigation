@@ -1,4 +1,5 @@
 import math
+from collections.abc import Callable
 
 import dash_leaflet as dl
 from dash import Dash, html, dcc, Input, Output
@@ -115,6 +116,7 @@ app.layout = html.Div(
     ],
 )
 
+make_deg_positive: Callable[[float], float] = lambda deg: (deg + 360) % 360
 
 # --- Callback: update markers, polyline, bounds, result text ---
 @app.callback(
@@ -149,9 +151,6 @@ def update_map(start_lat_s: str, start_lon_s: str, dest_lat_s: str, dest_lon_s: 
         )
 
     if dest_ok:
-        # Entering Western Hemisphere from the west
-        if s_lon - d_lon > 180:
-            d_lon += 360
         dest_marker = dl.Marker(
             position=[d_lat, d_lon],
             children=[dl.Tooltip("Destination"), dl.Popup(f"Dest: {d_lat:.3f}, {d_lon:.3f}")],
@@ -160,13 +159,18 @@ def update_map(start_lat_s: str, start_lon_s: str, dest_lat_s: str, dest_lon_s: 
     if start_ok and dest_ok:
         # Geodesic distance + azimuth
         fwd_az_deg, back_az_deg, dist_m = geod.inv(s_lon, s_lat, d_lon, d_lat)
-        az = (fwd_az_deg + 360) % 360
+        az = make_deg_positive(fwd_az_deg)
         dist_km = dist_m / 1000
         # --- Generate great-circle points ---
         N = 1024  # number of segments (increase for smoother curve)
         gc_lonlat = geod.npts(s_lon, s_lat, d_lon, d_lat, N, False, 0, 0)
-        shift_right: bool = d_lon > 180
-        gc_points = [(lat, (lon + 360) % 360 if shift_right else lon) for lon, lat in gc_lonlat]
+        gc_points = [[lat, lon] for lon, lat in gc_lonlat]
+        # Route crosses antimeridian
+        if not (-180 <= d_lon - s_lon <= 180):
+            start_marker.position[1] = make_deg_positive(s_lon)
+            dest_marker.position[1] = make_deg_positive(d_lon)
+            for lat_lon in gc_points:
+                lat_lon[1] = make_deg_positive(lat_lon[1])
         # --- Curved polyline ---
         line = dl.Polyline(
             positions=gc_points,
