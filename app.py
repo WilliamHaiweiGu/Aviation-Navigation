@@ -27,11 +27,9 @@ app = Dash(__name__)
 app.title = "Distance & Azimuth Tool"
 
 # --- Layout ---
-dcc_style = {
-    "backgroundColor": "#222",
-    "color": "#fff",
-    "border": "1px solid #555"
-}
+box_style = {"backgroundColor": "#00000000", "color": "white"}
+textbox_style = {"border": "1px solid #555"} | box_style
+
 app.layout = html.Div(
     style={"height": "100vh", "width": "100vw", "margin": 0, "padding": 0, "position": "relative"},
     children=[
@@ -63,7 +61,7 @@ app.layout = html.Div(
             style={
                 "position": "absolute",
                 "top": "12px",
-                "left": "12px",
+                "right": "12px",
                 "zIndex": 9999,
                 "background": "rgba(30,30,30,0.9)",
                 "padding": "12px",
@@ -73,36 +71,36 @@ app.layout = html.Div(
                 "minWidth": "260px",
             },
             children=[
-                html.Div("Start", style={"fontWeight": 700, "marginBottom": "6px"} | dcc_style),
+                html.Div("Start", style={"fontWeight": 700, "marginBottom": "6px"} | box_style),
                 html.Div(
                     style={"display": "grid", "gridTemplateColumns": "48px 1fr", "gap": "8px", "alignItems": "center"},
                     children=[
-                        html.Label("Lat:", style={"textAlign": "right"} | dcc_style),
+                        html.Label("Lat:", style={"textAlign": "right"} | box_style),
                         dcc.Input(id="start-lat", type="text", placeholder="e.g. 1.3521", debounce=False,
-                                  style=dcc_style),
-                        html.Label("Lon:", style={"textAlign": "right"} | dcc_style),
+                                  style=textbox_style),
+                        html.Label("Lon:", style={"textAlign": "right"} | box_style),
                         dcc.Input(id="start-lon", type="text", placeholder="e.g. 103.8198", debounce=False,
-                                  style=dcc_style),
+                                  style=textbox_style),
                     ],
                 ),
                 html.Hr(style={"margin": "12px 0"}),
 
-                html.Div("Destination", style={"fontWeight": 700, "marginBottom": "6px"} | dcc_style),
+                html.Div("Destination", style={"fontWeight": 700, "marginBottom": "6px"} | box_style),
                 html.Div(
                     style={"display": "grid", "gridTemplateColumns": "48px 1fr", "gap": "8px",
                            "alignItems": "center"},
                     children=[
-                        html.Label("Lat:", style={"textAlign": "right"} | dcc_style),
+                        html.Label("Lat:", style={"textAlign": "right"} | box_style),
                         dcc.Input(id="dest-lat", type="text", placeholder="e.g. 35.6895", debounce=False,
-                                  style=dcc_style),
-                        html.Label("Lon:", style={"textAlign": "right"} | dcc_style),
+                                  style=textbox_style),
+                        html.Label("Lon:", style={"textAlign": "right"} | box_style),
                         dcc.Input(id="dest-lon", type="text", placeholder="e.g. 139.6917", debounce=False,
-                                  style=dcc_style),
+                                  style=textbox_style),
                     ],
                 ),
                 html.Div(
                     "Tip: if either Lat/Lon is not a number, that point disappears.",
-                    style={"marginTop": "10px", "fontSize": "12px", "color": "#444"},
+                    style={"marginTop": "10px", "fontSize": "12px", "color": "white"},
                 ),
             ],
         ),
@@ -123,7 +121,7 @@ app.layout = html.Div(
             },
             children=[
                 html.Div("Distance & Azimuth (Start → Destination)",
-                         style={"fontWeight": 700, "marginBottom": "6px"} | dcc_style),
+                         style={"fontWeight": 700, "marginBottom": "6px"} | box_style),
                 dcc.Textarea(
                     id="result-box",
                     value="Enter both Start and Destination coordinates to compute distance and azimuth.",
@@ -132,16 +130,12 @@ app.layout = html.Div(
                         "width": "100%",
                         "height": "80px",
                         "resize": "none",
-                        "backgroundColor": "#222",
-                        "color": "#fff",
-                        "border": "1px solid #555"
-                    },
+                          } | textbox_style,
                 ),
             ],
         ),
     ],
 )
-
 make_deg_positive: Callable[[float], float] = lambda deg: (deg + 360) % 360
 
 plane_icon = {
@@ -210,7 +204,7 @@ def update_map(start_lat_s: str, start_lon_s: str, dest_lat_s: str, dest_lon_s: 
             color="black",
             weight=2,
         )
-        result = f"Distance: {dist_km:.3f} km\nAzimuth (Start → Dest): {az:.1f}° (clockwise from true North)"
+        result = f"Distance: {dist_km:.3f} km\nAzimuth: {az:.1f}° (clockwise from true north)"
         # Fit map to both points
         bounds = [[min(s_lat, d_lat), min(s_lon, d_lon)], [max(s_lat, d_lat), max(s_lon, d_lon)]]
     else:
