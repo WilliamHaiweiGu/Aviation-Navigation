@@ -27,6 +27,11 @@ app = Dash(__name__)
 app.title = "Distance & Azimuth Tool"
 
 # --- Layout ---
+dcc_style = {
+    "backgroundColor": "#222",
+    "color": "#fff",
+    "border": "1px solid #555"
+}
 app.layout = html.Div(
     style={"height": "100vh", "width": "100vw", "margin": 0, "padding": 0, "position": "relative"},
     children=[
@@ -37,7 +42,14 @@ app.layout = html.Div(
             zoom=2,
             style={"height": "100%", "width": "100%"},
             children=[
-                dl.TileLayer(url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
+                dl.TileLayer(
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                    attribution="Tiles © Esri"
+                ),
+                dl.TileLayer(
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+                    attribution="Tiles © Esri",
+                ),
                 # Dynamic layers:
                 html.Div(id="start-layer"),
                 html.Div(id="dest-layer"),
@@ -46,13 +58,14 @@ app.layout = html.Div(
         ),
 
         # Top-left control panel overlay
+
         html.Div(
             style={
                 "position": "absolute",
                 "top": "12px",
                 "left": "12px",
                 "zIndex": 9999,
-                "background": "rgba(255,255,255,0.92)",
+                "background": "rgba(30,30,30,0.9)",
                 "padding": "12px",
                 "borderRadius": "12px",
                 "boxShadow": "0 6px 18px rgba(0,0,0,0.15)",
@@ -60,26 +73,31 @@ app.layout = html.Div(
                 "minWidth": "260px",
             },
             children=[
-                html.Div("Start", style={"fontWeight": 700, "marginBottom": "6px"}),
+                html.Div("Start", style={"fontWeight": 700, "marginBottom": "6px"} | dcc_style),
                 html.Div(
                     style={"display": "grid", "gridTemplateColumns": "48px 1fr", "gap": "8px", "alignItems": "center"},
                     children=[
-                        html.Label("Lat:", style={"textAlign": "right"}),
-                        dcc.Input(id="start-lat", type="text", placeholder="e.g. 1.3521", debounce=False),
-                        html.Label("Lon:", style={"textAlign": "right"}),
-                        dcc.Input(id="start-lon", type="text", placeholder="e.g. 103.8198", debounce=False),
+                        html.Label("Lat:", style={"textAlign": "right"} | dcc_style),
+                        dcc.Input(id="start-lat", type="text", placeholder="e.g. 1.3521", debounce=False,
+                                  style=dcc_style),
+                        html.Label("Lon:", style={"textAlign": "right"} | dcc_style),
+                        dcc.Input(id="start-lon", type="text", placeholder="e.g. 103.8198", debounce=False,
+                                  style=dcc_style),
                     ],
                 ),
                 html.Hr(style={"margin": "12px 0"}),
 
-                html.Div("Destination", style={"fontWeight": 700, "marginBottom": "6px"}),
+                html.Div("Destination", style={"fontWeight": 700, "marginBottom": "6px"} | dcc_style),
                 html.Div(
-                    style={"display": "grid", "gridTemplateColumns": "48px 1fr", "gap": "8px", "alignItems": "center"},
+                    style={"display": "grid", "gridTemplateColumns": "48px 1fr", "gap": "8px",
+                           "alignItems": "center"},
                     children=[
-                        html.Label("Lat:", style={"textAlign": "right"}),
-                        dcc.Input(id="dest-lat", type="text", placeholder="e.g. 35.6895", debounce=False),
-                        html.Label("Lon:", style={"textAlign": "right"}),
-                        dcc.Input(id="dest-lon", type="text", placeholder="e.g. 139.6917", debounce=False),
+                        html.Label("Lat:", style={"textAlign": "right"} | dcc_style),
+                        dcc.Input(id="dest-lat", type="text", placeholder="e.g. 35.6895", debounce=False,
+                                  style=dcc_style),
+                        html.Label("Lon:", style={"textAlign": "right"} | dcc_style),
+                        dcc.Input(id="dest-lon", type="text", placeholder="e.g. 139.6917", debounce=False,
+                                  style=dcc_style),
                     ],
                 ),
                 html.Div(
@@ -97,19 +115,27 @@ app.layout = html.Div(
                 "right": "12px",
                 "bottom": "12px",
                 "zIndex": 9999,
-                "background": "rgba(255,255,255,0.92)",
+                "background": "rgba(30,30,30,0.9)",
                 "padding": "12px",
                 "borderRadius": "12px",
                 "boxShadow": "0 6px 18px rgba(0,0,0,0.15)",
                 "fontFamily": "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
             },
             children=[
-                html.Div("Distance & Azimuth (Start → Destination)", style={"fontWeight": 700, "marginBottom": "6px"}),
+                html.Div("Distance & Azimuth (Start → Destination)",
+                         style={"fontWeight": 700, "marginBottom": "6px"} | dcc_style),
                 dcc.Textarea(
                     id="result-box",
                     value="Enter both Start and Destination coordinates to compute distance and azimuth.",
                     readOnly=True,
-                    style={"width": "100%", "height": "80px", "resize": "none"},
+                    style={
+                        "width": "100%",
+                        "height": "80px",
+                        "resize": "none",
+                        "backgroundColor": "#222",
+                        "color": "#fff",
+                        "border": "1px solid #555"
+                    },
                 ),
             ],
         ),
@@ -117,6 +143,12 @@ app.layout = html.Div(
 )
 
 make_deg_positive: Callable[[float], float] = lambda deg: (deg + 360) % 360
+
+plane_icon = {
+    "iconUrl": "https://cdn-icons-png.flaticon.com/512/870/870194.png",
+    "iconSize": [32, 32],
+    "iconAnchor": [16, 16]
+}
 
 # --- Callback: update markers, polyline, bounds, result text ---
 @app.callback(
@@ -148,6 +180,7 @@ def update_map(start_lat_s: str, start_lon_s: str, dest_lat_s: str, dest_lon_s: 
         start_marker = dl.Marker(
             position=[s_lat, s_lon],
             children=[dl.Tooltip("Start"), dl.Popup(f"Start: {s_lat:.3f}, {s_lon:.3f}")],
+            icon=plane_icon
         )
 
     if dest_ok:
@@ -174,8 +207,8 @@ def update_map(start_lat_s: str, start_lon_s: str, dest_lat_s: str, dest_lon_s: 
         # --- Curved polyline ---
         line = dl.Polyline(
             positions=gc_points,
-            color="blue",
-            weight=3,
+            color="black",
+            weight=2,
         )
         result = f"Distance: {dist_km:.3f} km\nAzimuth (Start → Dest): {az:.1f}° (clockwise from true North)"
         # Fit map to both points
